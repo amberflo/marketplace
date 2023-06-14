@@ -1,0 +1,68 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Creates a stack containing an IAM role used to grant Amberflo AWS account to access the marketplace data feed.
+
+Parameters:
+  BucketArn:
+    Description: The ARN of the S3 bucket where the data feed is stored
+    Type: String
+  KMSKeyArn:
+    Description: The ARN of the KMS key used to encrypt the S3 bucket
+    Type: String
+  AwsAccountId:
+    Description: Account number of Amberflo AWS account to which to grant read access to the data
+    Type: String
+
+Resources:
+  AwsIntegrationCrossAccountPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AmberfloAwsMarketplaceDataFeedAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucketVersions'
+              - 's3:GetObjectAttributes'
+              - 's3:ListBucket'
+              - 's3:GetObjectVersion'
+            Resource:
+              - !Join 
+                - ''
+                - - !Ref BucketArn
+                  - /*
+              - !Ref BucketArn
+          - Effect: Allow
+            Action:
+              - 'kms:Decrypt'
+              - 'kms:GetKeyPolicy'
+              - 'kms:DescribeKey'
+            Resource:
+              - !Ref KMSKeyArn
+      Roles:
+        - !Ref AwsIntegrationCrossAccountRole
+  AwsIntegrationCrossAccountRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Join 
+                - ''
+                - - 'arn:aws:iam::'
+                  - !Ref AwsAccountId
+                  - ':root'
+            Action: 'sts:AssumeRole'
+            
+
+Outputs:
+  CrossAccountRoleArn:
+    Description: Cross account access role ARN
+    Value: !GetAtt 
+      - AwsIntegrationCrossAccountRole
+      - Arn
