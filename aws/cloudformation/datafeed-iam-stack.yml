@@ -1,7 +1,10 @@
----
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: 2010-09-09
 
-Description: Creates a stack containing an IAM role used to grant Amberflo AWS account to access the marketplace data feed.
+
+Description: >-
+  Creates a stack containing an IAM role used to grant Amberflo AWS account to
+  access the marketplace data feed.
+
 
 Parameters:
   BucketArn:
@@ -11,8 +14,23 @@ Parameters:
     Description: The ARN of the KMS key used to encrypt the S3 bucket
     Type: String
   AwsAccountId:
-    Description: Account number of Amberflo AWS account to which to grant read access to the data
+    Description: >-
+      Account number of Amberflo AWS account to which to grant read access to
+      the data
     Type: String
+  ExternalId:
+    Description: >-
+      Optional identifier for increased security when Amberflo AWS account
+      assumes this role
+    Type: String
+    Default: ''
+
+
+Conditions:
+  IsExternalIdEmpty: !Equals 
+    - !Ref ExternalId
+    - ''
+
 
 Resources:
   AwsIntegrationCrossAccountPolicy:
@@ -52,13 +70,14 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Join 
-                - ''
-                - - 'arn:aws:iam::'
-                  - !Ref AwsAccountId
-                  - ':root'
+              AWS: !Ref AwsAccountId
             Action: 'sts:AssumeRole'
-            
+            Condition: !If 
+              - IsExternalIdEmpty
+              - {}
+              - StringEquals:
+                  'sts:ExternalId': !Ref ExternalId
+
 
 Outputs:
   CrossAccountRoleArn:
