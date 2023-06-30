@@ -24,6 +24,10 @@ Parameters:
       assumes this role
     Type: String
     Default: ''
+  FeedProcessorRoleArn:
+    Description: >-
+      The ARN of the Amberflo role processing the Marketplace feed
+    Type: String
 
 
 Conditions:
@@ -71,6 +75,15 @@ Resources:
           - Effect: Allow
             Principal:
               AWS: !Ref AwsAccountId
+            Action: 'sts:AssumeRole'
+            Condition: !If 
+              - IsExternalIdEmpty
+              - {}
+              - StringEquals:
+                  'sts:ExternalId': !Ref ExternalId
+          - Effect: Allow
+            Principal:
+              AWS: !Ref FeedProcessorRoleArn
             Action: 'sts:AssumeRole'
             Condition: !If 
               - IsExternalIdEmpty
